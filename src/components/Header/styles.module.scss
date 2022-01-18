@@ -1,0 +1,56 @@
+.headerContainer {
+  height: 5rem;
+  border-bottom: 1px solid var(--charleston-green);
+}
+
+.headerContent {
+  height: 5rem;
+  display: flex;
+  margin: 0 auto;
+  padding: 0 2rem;
+  max-width: 1200px;
+  align-items: center;
+
+  nav {
+    height: 5rem;
+    margin-left: 5rem;
+
+    a {
+      height: 5rem;
+      padding: 0 0.5rem;
+      line-height: 5rem;
+      position: relative;
+      display: inline-block;
+      transition: color 0.2s;
+      color: var(--metallic-silver);
+
+      & + a {
+        margin-left: 2rem;
+      }
+
+      &:hover {
+        color: var(--white);
+      }
+
+      &.active {
+        font-weight: bold;
+        color: var(--white);
+      }
+
+      &.active::after {
+        left: 0;
+        width: 100%;
+        bottom: 1px;
+        height: 3px;
+        content: '';
+        position: absolute;
+        border-radius: 3px 3px 0 0;
+        background: var(--marigold);
+      }
+    }
+  }
+
+  > button {
+    margin-left: auto;
+  }
+}
