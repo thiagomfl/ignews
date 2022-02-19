@@ -1,0 +1,76 @@
+import Stripe from "stripe";
+import { Readable } from "stream";
+import { NextApiRequest, NextApiResponse } from "next";
+
+import { stripe } from "../../services/stripe";
+import { saveSubscription } from "./_lib/manageSubscription";
+
+async function buffer(readable: Readable) {
+  const chunks = [];
+
+  for await (const chunk of readable) {
+    const chunkToPush = typeof chunk === "string" ? Buffer.from(chunk) : chunk;
+    chunks.push(chunkToPush);
+  }
+
+  return Buffer.concat(chunks);
+}
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+const relevantEvents = new Set([
+  "checkout.session.completed",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+]);
+
+// eslint-disable-next-line import/no-anonymous-default-export
+export default async (req: NextApiRequest, res: NextApiResponse) => {
+  if (req.method === "POST") {
+    const buf = await buffer(req);
+    const secret = req.headers["stripe-signature"];
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(buf, secret, process.env.STRIPE_WEBHOOK_SERCRET);
+    } catch (error) {
+      return res.status(400).send(`Webhook error ${error.message}`);
+    }
+
+    if (relevantEvents.has(event.type)) {
+      try {
+        switch (event.type) {
+          case "customer.subscription.updated":
+          case "customer.subscription.deleted":
+            const subscription = event.data.object as Stripe.Subscription;
+            await saveSubscription(subscription.id, subscription.customer.toString(), false);
+            break;
+
+          case "checkout.session.completed":
+            const checkoutSession = event.data.object as Stripe.Checkout.Session;
+
+            await saveSubscription(
+              checkoutSession.subscription.toString(),
+              checkoutSession.customer.toString(),
+              true
+            );
+            break;
+
+          default:
+            throw new Error("Undhandled event");
+        }
+      } catch (error) {
+        return res.json({ error: "Webhook handler failed." });
+      }
+    }
+
+    res.json({ message: "success" });
+  } else {
+    res.setHeader("Allow", "POST");
+    res.status(405).end("Moethod not allowed");
+  }
+};

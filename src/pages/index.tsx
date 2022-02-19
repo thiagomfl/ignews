@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Image from "next/image";
 import { GetStaticProps } from "next";
 
 import { stripe } from "../services/stripe";
@@ -31,13 +32,13 @@ export default function Home({ product }: HomeProps) {
           </p>
           <SubscribeButton priceId={product.priceId} />
         </section>
-        <img src="/images/avatar.svg" alt="Girl Coding" />
+        <Image width="336" height="521" alt="Girl Coding" src="/images/avatar.svg" />
       </main>
     </>
   );
 }
 
-export const getServerSideProps: GetStaticProps = async () => {
+export const getStaticProps: GetStaticProps = async () => {
   const price = await stripe.prices.retrieve("price_1KKhy9LfLm7TkpL6JEYAyB1P");
 
   const product = {
